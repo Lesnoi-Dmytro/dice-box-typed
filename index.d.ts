@@ -9,7 +9,7 @@ export default class DiceBox {
   clear(): DiceBox;
   hide(className?: string): DiceBox;
   show(): DiceBox;
-  showResults(dice: DiceRollResult[]): void;
+  showResults(dice:{id: number, value: number, sides: number | string, theme?: string, themeColor?: string}[]): void;
   getRollResults(): DiceRollResults[];
   config: DiceBoxOptions;
   isVisible: boolean;
