@@ -20,10 +20,10 @@
   "homepage": "https://fantasticdice.games/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/3d-dice/dice-box"
+    "url": "https://github.com/Lesnoi-Dmytro/dice-box-typed"
   },
   "bugs": {
-    "url": "https://github.com/3d-dice/dice-box/issues"
+    "url": "https://github.com/Lesnoi-Dmytro/dice-box-typed/issues"
   },
   "type": "module",
   "files": [
@@ -40,6 +40,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
+    "prepare": "npm run build",
     "postinstall": "node copyAssets.js"
   },
   "dependencies": {
