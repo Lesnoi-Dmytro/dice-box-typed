@@ -20,7 +20,12 @@ function createCanvas(options) {
     }
   }
 
-  container.appendChild(canvas)
+  const existing = container.querySelector(`#${id}`)
+  if (existing) {
+    return existing;
+  } else {
+    container.appendChild(canvas)
+  }
 
   return canvas
 }

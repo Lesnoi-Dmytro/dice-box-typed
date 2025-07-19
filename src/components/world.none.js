@@ -39,7 +39,6 @@ class WorldNone {
 	}
 
 	addNonDie(die){
-		console.log('die', die)
 		clearTimeout(this.#rollCompleteTimer)
 		const {id, value, ...rest} = die
 		const newDie = {
@@ -60,12 +59,10 @@ class WorldNone {
 	}
 
 	add(die){
-		console.log("add die")
 		this.addNonDie(die)
 	}
 
 	remove(data){
-		console.log("remove die")
 		// TODO: test this with exploding dice
 		const dieData = this.#dieCache[data.id]
 		

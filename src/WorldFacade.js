@@ -1,6 +1,6 @@
-import { createCanvas } from './components/world/canvas'
 import physicsWorker from './components/physics.worker.js?worker&inline'
-import { debounce, createAsyncQueue, Random, hexToRGB, webgl_support } from './helpers'
+import { createCanvas } from './components/world/canvas'
+import { createAsyncQueue, debounce, hexToRGB, Random, webgl_support } from './helpers'
 
 const defaultOptions = {
 	id: `dice-canvas-${Date.now()}`, // set the canvas id
@@ -830,6 +830,14 @@ class WorldFacade {
 			// return the groupCopy - note: we never return this.rollGroupData
 			return groupCopy
 		})
+	}
+
+	showResults(dice) {
+		this.clear();
+
+		for (const die of dice) {
+			this.#DiceWorld.addNonDie(die);
+		}
 	}
 }
 
