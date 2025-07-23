@@ -76,9 +76,6 @@ self.onmessage = (e) => {
 						// console.log('e.data', e.data)
 						loadModels(e.data.options)
 						break;
-					case "addStaticDie":
-						addStaticDie(e.data.options)
-						break;
           case "addDie":
 						// toss from all edges
 						// setStartPosition()
