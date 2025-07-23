@@ -313,6 +313,7 @@ class WorldOnscreen {
 			dieType: Number.isInteger(sides) ? `d${sides}` : sides,
 			...rest
 		}, this.#scene)
+		console.log('Die Options:', dieOptions)
 
 		// Create the die instance with custom options
 		const staticDieOptions = {
@@ -325,6 +326,7 @@ class WorldOnscreen {
 		}
 
 		const newDie = new Dice(staticDieOptions, this.#scene)
+		console.log('Die Created:', newDie)
 		
 		// Set the position
 		newDie.mesh.position.set(position.x, position.y, position.z)
@@ -341,10 +343,10 @@ class WorldOnscreen {
 		this.#dieCache[newDie.id] = newDie
 
 		// Trigger result callback immediately
-		this.onRollResult({
-			rollId: newDie.config.rollId || newDie.id,
-			value: newDie.value
-		})
+		// this.onRollResult({
+		// 	rollId: newDie.config.rollId || newDie.id,
+		// 	value: newDie.value
+		// })
 
 		// Increment sleeper count
 		this.#sleeperCount++

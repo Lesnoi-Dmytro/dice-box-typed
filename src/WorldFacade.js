@@ -835,7 +835,9 @@ class WorldFacade {
 	showResults(dice) {
 		this.clear();
 
+		console.log('Dice:', dice)
 		for (const die of dice) {
+			console.log('Die:', die)
 			this.#DiceWorld.addStaticDie(die);
 		}
 	}

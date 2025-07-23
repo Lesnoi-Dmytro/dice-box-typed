@@ -58,8 +58,6 @@ class WorldNone {
 		}, 500)
 	}
 
-	addStaticDie() {}
-
 	add(die){
 		this.addNonDie(die)
 	}
