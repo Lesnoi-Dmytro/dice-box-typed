@@ -1,11 +1,11 @@
-import { Vector3 } from '@babylonjs/core/Maths/math.vector'
-import { createEngine } from './world/engine'
-import { createScene } from './world/scene'
-import { createCamera } from './world/camera'
-import { createLights } from './world/lights'
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector'
 import Container from './Container'
 import Dice from './Dice'
 import ThemeLoader from './ThemeLoader'
+import { createCamera } from './world/camera'
+import { createEngine } from './world/engine'
+import { createLights } from './world/lights'
+import { createScene } from './world/scene'
 
 class WorldOnscreen {
 	config
@@ -238,6 +238,118 @@ class WorldOnscreen {
 				this.handleAsleep(newDie)
 			}, this.#count++ * this.config.delay))
 		}, 10)
+	}
+
+	// Add this method to your Dice class
+	static getRotationForValue(die, desiredValue, scene) {
+			const meshName = die.config.parentMesh || die.config.meshName
+			const meshFaceIds = scene.themeData[meshName].colliderFaceMap
+			const dieType = die.dieType
+			
+			// Find which face ID corresponds to the desired value
+			let targetFaceId = null
+			for (const [faceId, value] of Object.entries(meshFaceIds[dieType])) {
+					if (value === desiredValue) {
+							targetFaceId = parseInt(faceId)
+							break
+					}
+			}
+			
+			if (targetFaceId === null) {
+					console.error(`No face found for value ${desiredValue}`)
+					return null
+			}
+			
+			// Get the collider mesh to calculate face normal
+			const colliderMesh = scene.getMeshByName(`${meshName}_${dieType}_collider`)
+			const faceNormal = Dice.getFaceNormal(colliderMesh, targetFaceId)
+			
+			// Calculate rotation to make this normal point up
+			const upVector = Vector3.Up()
+			const rotationQuaternion = Quaternion.FromUnitVectorsToRef(faceNormal, upVector, new Quaternion())
+			
+			return rotationQuaternion
+	}
+
+	// Helper method to get face normal from face ID
+	static getFaceNormal(mesh, faceId) {
+			const positions = mesh.getVerticesData("position")
+			const indices = mesh.getIndices()
+			
+			// Get vertices of the face (each face has 3 vertices in a triangle)
+			const i1 = indices[faceId * 3]
+			const i2 = indices[faceId * 3 + 1]
+			const i3 = indices[faceId * 3 + 2]
+			
+			// Get vertex positions (positions array stores [x,y,z,x,y,z,...])
+			const v1 = new Vector3(positions[i1 * 3], positions[i1 * 3 + 1], positions[i1 * 3 + 2])
+			const v2 = new Vector3(positions[i2 * 3], positions[i2 * 3 + 1], positions[i2 * 3 + 2])
+			const v3 = new Vector3(positions[i3 * 3], positions[i3 * 3 + 1], positions[i3 * 3 + 2])
+			
+			// Calculate face normal using cross product
+			const edge1 = v2.subtract(v1)
+			const edge2 = v3.subtract(v1)
+			const faceNormal = Vector3.Cross(edge1, edge2).normalize()
+			
+			return faceNormal
+	}
+
+	// Add a die with predefined position and rotation (no physics simulation)
+	async addStaticDie(options) {
+		const {
+			sides,
+			theme = 'default',
+			value,
+			position,
+			id = Date.now(),
+			...rest
+		} = options
+
+		// Load the die model first
+		const dieOptions = await Dice.loadDie({
+			sides,
+			theme,
+			meshName: 'default',
+			dieType: Number.isInteger(sides) ? `d${sides}` : sides,
+			...rest
+		}, this.#scene)
+
+		// Create the die instance with custom options
+		const staticDieOptions = {
+			...dieOptions,
+			id,
+			assetPath: this.config.assetPath,
+			enableShadows: this.config.enableShadows,
+			scale: this.config.scale,
+			lights: this.#lights,
+		}
+
+		const newDie = new Dice(staticDieOptions, this.#scene)
+		
+		// Set the position
+		newDie.mesh.position.set(position.x, position.y, position.z)
+		
+		// Set the rotation
+		const rotation = WorldOnscreen.getRotationForValue(newDie, value, this.#scene)
+		newDie.mesh.rotationQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w)
+
+		// Set the predefined value
+		newDie.value = value
+		newDie.asleep = true
+
+		// Add to cache
+		this.#dieCache[newDie.id] = newDie
+
+		// Trigger result callback immediately
+		this.onRollResult({
+			rollId: newDie.config.rollId || newDie.id,
+			value: newDie.value
+		})
+
+		// Increment sleeper count
+		this.#sleeperCount++
+
+		return newDie
 	}
 
 	// add a die to the scene

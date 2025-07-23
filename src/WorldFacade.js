@@ -836,7 +836,7 @@ class WorldFacade {
 		this.clear();
 
 		for (const die of dice) {
-			this.#DiceWorld.addNonDie(die);
+			this.#DiceWorld.addStaticDie(die);
 		}
 	}
 }
