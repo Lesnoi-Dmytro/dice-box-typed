@@ -1,5 +1,5 @@
-import { lerp } from '../helpers'
 import AmmoJS from "../ammo/ammo.wasm.es.js"
+import { lerp } from '../helpers'
 
 // Firefox limitation: https://github.com/vitejs/vite/issues/4586
 
@@ -76,6 +76,9 @@ self.onmessage = (e) => {
 						// console.log('e.data', e.data)
 						loadModels(e.data.options)
 						break;
+					case "addStaticDie":
+						addStaticDie(e.data.options)
+						break;
           case "addDie":
 						// toss from all edges
 						// setStartPosition()
@@ -94,7 +97,6 @@ self.onmessage = (e) => {
 						break;
           case "stopSimulation":
             stopLoop = true
-						
             break;
           case "resumeSimulation":
 						if(e.data.newStartPoint){
