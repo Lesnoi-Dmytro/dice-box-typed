@@ -47,7 +47,7 @@ class WorldNone {
 			config: rest
 		}
 		this.#dieCache[id] = newDie
-		
+
 		this.#dieRollTimer.push(setTimeout(() => {
 			this.handleAsleep(newDie)
 		}, this.#count++ * this.config.delay))
@@ -108,7 +108,7 @@ class WorldNone {
 	
 		// get the roll result for this die
 		await Dice.getRollResult(die)
-	
+
 		if(die.d10Instance || die.dieParent) {
 			// if one of the pair is asleep and the other isn't then it falls through without getting the roll result
 			// otherwise both dice in the d100 are asleep and ready to calc their roll result
@@ -123,7 +123,11 @@ class WorldNone {
 	
 				this.onRollResult({
 					rollId: d100.config.rollId,
-					value : d100.value
+					value : d100.value,
+					pos: d100.mesh.position,
+					quat: d100.mesh.rotationQuaternion,
+					childPos: d10.mesh.position,
+					childQuat: d10.mesh.rotationQuaternion,
 				})
 			}
 		} else {
@@ -133,7 +137,9 @@ class WorldNone {
 			}
 			this.onRollResult({
 				rollId: die.config.rollId,
-				value: die.value
+				value: die.value,
+				pos: die.mesh.position,
+				quat: die.mesh.rotationQuaternion,
 			})
 		}
 		// add to the sleeper count

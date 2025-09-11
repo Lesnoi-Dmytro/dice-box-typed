@@ -1,10 +1,10 @@
-import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader'
-import { Vector3 } from '@babylonjs/core/Maths/math.vector'
-import { Color3 } from '@babylonjs/core/Maths/math.color'
 import { Ray } from "@babylonjs/core/Culling/ray";
+import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 // import { RayHelper } from '@babylonjs/core/Debug';
-import '../helpers/babylonFileLoader'
-import '@babylonjs/core/Meshes/instancedMesh'
+import '@babylonjs/core/Meshes/instancedMesh';
+import '../helpers/babylonFileLoader';
 
 import { deepCopy } from '../helpers';
 
@@ -208,55 +208,55 @@ class Dice {
   }
 
   static async getRollResult(die,scene) {
-    // TODO: Why a function in a function?? fix this
-    const getDieRoll = (d=die) => new Promise((resolve,reject) => {
-
-      const meshName = die.config.parentMesh || die.config.meshName
-      const meshFaceIds = scene.themeData[meshName].colliderFaceMap
-      const d4FaceDown = scene.themeData[meshName].d4FaceDown
-
-      if(!meshFaceIds[d.dieType]){
-        throw new Error(`No colliderFaceMap data for ${d.dieType}`)
-      }
-
-      // const dieHitbox = d.config.scene.getMeshByName(`${d.dieType}_collider`).createInstance(`${d.dieType}-hitbox-${d.id}`)
-      const dieHitbox = scene.getMeshByName(`${meshName}_${d.dieType}_collider`).createInstance(`${meshName}_${d.dieType}-hitbox-${d.id}`)
-      dieHitbox.isPickable = true
-      dieHitbox.isVisible = true
-      dieHitbox.setEnabled(true)
-      dieHitbox.position = d.mesh.position
-      dieHitbox.rotationQuaternion = d.mesh.rotationQuaternion
-
-      let vector = Dice.setVector3(0, 1, 0)
-      if(d.dieType === 'd4' && d4FaceDown) {
-        vector = Dice.setVector3(0, -1, 0)
-      }
-
-      Dice.ray.direction = vector
-      Dice.ray.origin = die.mesh.position
-
-      const picked = scene.pickWithRay(Dice.ray)
-
-      dieHitbox.dispose()
-
-      // let rayHelper = new RayHelper(Dice.ray)
-      // rayHelper.show(d.config.scene)
-			d.value = meshFaceIds[d.dieType][picked.faceId]
-      if(d.value === undefined){
-        // throw new Error(`colliderFaceMap Error: No value found for ${d.dieType} mesh face ${picked.faceId}`)
-        // log error, but allow result processing to continue
-        console.error(`colliderFaceMap Error: No value found for ${d.dieType} mesh face ${picked.faceId}`)
-        d.value = 0
-      }
-
-      return resolve(d.value)
-    }).catch(error => console.error(error))
-
     if(!die.mesh){
       return die.value
     }
-    
-    return await getDieRoll()
+
+    try {
+      return new Promise((resolve,reject) => {
+        const meshName = die.config.parentMesh || die.config.meshName
+        const meshFaceIds = scene.themeData[meshName].colliderFaceMap
+        const d4FaceDown = scene.themeData[meshName].d4FaceDown
+
+        if(!meshFaceIds[die.dieType]){
+          throw new Error(`No colliderFaceMap data for ${die.dieType}`)
+        }
+
+        const dieHitbox = scene.getMeshByName(`${meshName}_${die.dieType}_collider`).createInstance(`${meshName}_${die.dieType}-hitbox-${die.id}`)
+        dieHitbox.isPickable = true
+        dieHitbox.isVisible = true
+        dieHitbox.setEnabled(true)
+        dieHitbox.position = die.mesh.position
+        dieHitbox.rotationQuaternion = die.mesh.rotationQuaternion
+
+        let vector = Dice.setVector3(0, 1, 0)
+        if(die.dieType === 'd4' && d4FaceDown) {
+          vector = Dice.setVector3(0, -1, 0)
+        }
+
+        Dice.ray.direction = vector
+        Dice.ray.origin = die.mesh.position
+
+        const picked = scene.pickWithRay(Dice.ray)
+
+        dieHitbox.dispose()
+
+        // let rayHelper = new RayHelper(Dice.ray)
+        // rayHelper.show(d.config.scene)
+        die.value = meshFaceIds[die.dieType][picked.faceId]
+        if(die.value === undefined){
+          // throw new Error(`colliderFaceMap Error: No value found for ${d.dieType} mesh face ${picked.faceId}`)
+          // log error, but allow result processing to continue
+          console.error(`colliderFaceMap Error: No value found for ${die.dieType} mesh face ${picked.faceId}`)
+          die.value = 0
+        }
+
+        return resolve(die.value)
+      })
+    } catch(error) {
+      console.error("Error getting roll result:", error)
+      return 0
+    }
   }
 }
 

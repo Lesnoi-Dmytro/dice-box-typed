@@ -1,11 +1,11 @@
-import { Vector3 } from '@babylonjs/core/Maths/math.vector'
-import { createEngine } from './world/engine'
-import { createScene } from './world/scene'
-import { createCamera } from './world/camera'
-import { createLights } from './world/lights'
+import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector'
 import Container from './Container'
 import Dice from './Dice'
 import ThemeLoader from './ThemeLoader'
+import { createCamera } from './world/camera'
+import { createEngine } from './world/engine'
+import { createLights } from './world/lights'
+import { createScene } from './world/scene'
 
 class WorldOnscreen {
 	config
@@ -231,7 +231,7 @@ class WorldOnscreen {
 			config: rest
 		}
 		this.#dieCache[id] = newDie
-		
+	
 		// double timeout to ensure any real dice have a chance to queue up and rollResults isn't triggered right away
 		setTimeout(()=>{
 			this.#dieRollTimer.push(setTimeout(() => {
@@ -254,20 +254,24 @@ class WorldOnscreen {
 		}
 		
 		const newDie = new Dice(diceOptions, this.#scene)
-		
 		// save the die just created to the cache
 		this.#dieCache[newDie.id] = newDie
+		if (options.pos) {
+			const { x, y, z } = options.pos;
+			newDie.mesh.position = new Vector3(x, y, z);
+		}
+		if (options.quat) {
+			const { x, y, z, w } = options.quat;
+			newDie.mesh.rotationQuaternion = new Quaternion(x, y, z, w);
+		}
 		
 		// tell the physics engine to roll this die type - which is a low poly collider
 		this.#physicsWorkerPort.postMessage({
 			action: "addDie",
 			options: {
-				sides: options.sides,
 				scale: this.config.scale,
 				id: newDie.id,
-				newStartPoint: options.newStartPoint,
-				theme: options.theme,
-				meshName: options.meshName,
+				...options,
 			}
 		})
 	
@@ -278,8 +282,19 @@ class WorldOnscreen {
 				const d10Instance = new Dice(response, this.#scene)
 				// identify the parent of this d10 so we can calculate the roll result later
 				d10Instance.dieParent = newDie
+				
+				if (options.childPos) {
+					const { x, y, z } = options.childPos;
+					d10Instance.mesh.position = new Vector3(x, y, z);
+				}
+				if (options.childQuat) {
+					const { x, y, z, w } = options.childQuat;
+					d10Instance.mesh.rotationQuaternion = new Quaternion(x, y, z, w);
+				}
+
 				return d10Instance
 			})
+
 			// add the d10 to the cache and ask the physics worker for a collider
 			this.#dieCache[`${newDie.d10Instance.id}`] = newDie.d10Instance
 			this.#physicsWorkerPort.postMessage({
@@ -289,14 +304,16 @@ class WorldOnscreen {
 					scale: this.config.scale,
 					id: newDie.d10Instance.id,
 					theme: options.theme,
-					meshName: options.meshName
+					meshName: options.meshName,
+					value: options.value,
+					pos: options.childPos,
+					quat: options.childQuat,
 				}
 			})
 		}
 	
 		// return the die instance
 		return newDie
-	
 	}
 	
 	remove(data) {
@@ -341,41 +358,41 @@ class WorldOnscreen {
 		let bufferIndex = 1
 
 		// loop will be based on diceBufferView[0] value which is the bodies length in physics.worker
-	for (let i = 0, len = this.diceBufferView[0]; i < len; i++) {
-		if(!Object.keys(this.#dieCache).length){
-			continue
-		}
-		const die = this.#dieCache[`${this.diceBufferView[bufferIndex]}`]
-		if(!die) {
-			console.log("Error: die not available in scene to animate")
-			break
-		}
-		// if the first position index is -1 then this die has been flagged as asleep
-		if(this.diceBufferView[bufferIndex + 1] === -1) {
-			this.handleAsleep(die)
-		} else {
-			const px = this.diceBufferView[bufferIndex + 1]
-			const py = this.diceBufferView[bufferIndex + 2]
-			const pz = this.diceBufferView[bufferIndex + 3]
-			const qx = this.diceBufferView[bufferIndex + 4]
-			const qy = this.diceBufferView[bufferIndex + 5]
-			const qz = this.diceBufferView[bufferIndex + 6]
-			const qw = this.diceBufferView[bufferIndex + 7]
+		for (let i = 0, len = this.diceBufferView[0]; i < len; i++) {
+			if(!Object.keys(this.#dieCache).length){
+				continue
+			}
+			const die = this.#dieCache[`${this.diceBufferView[bufferIndex]}`]
+			if(!die) {
+				console.log("Error: die not available in scene to animate")
+				break
+			}
+			// if the first position index is -1 then this die has been flagged as asleep
+			if(this.diceBufferView[bufferIndex + 1] === -1) {
+				this.handleAsleep(die)
+			} else {
+				const px = this.diceBufferView[bufferIndex + 1]
+				const py = this.diceBufferView[bufferIndex + 2]
+				const pz = this.diceBufferView[bufferIndex + 3]
+				const qx = this.diceBufferView[bufferIndex + 4]
+				const qy = this.diceBufferView[bufferIndex + 5]
+				const qz = this.diceBufferView[bufferIndex + 6]
+				const qw = this.diceBufferView[bufferIndex + 7]
 
-			die.mesh.position.set(px, py, pz)
-			die.mesh.rotationQuaternion.set(qx, qy, qz, qw)
+				die.mesh.position.set(px, py, pz)
+				die.mesh.rotationQuaternion.set(qx, qy, qz, qw)
+			}
+
+			bufferIndex = bufferIndex + 8
 		}
 
-		bufferIndex = bufferIndex + 8
-	}
-
-	// transfer the buffer back to physics worker
-	requestAnimationFrame(()=>{
-		this.#physicsWorkerPort.postMessage({
-			action: "stepSimulation",
-			diceBuffer: this.diceBufferView.buffer
-		}, [this.diceBufferView.buffer])
-	})
+		// transfer the buffer back to physics worker
+		requestAnimationFrame(()=>{
+			this.#physicsWorkerPort.postMessage({
+				action: "stepSimulation",
+				diceBuffer: this.diceBufferView.buffer
+			}, [this.diceBufferView.buffer])
+		})
 	}
 	
 	// handle the position updates from the physics worker. It's a simple flat array of numbers for quick and easy transfer
@@ -403,7 +420,11 @@ class WorldOnscreen {
 	
 				this.onRollResult({
 					rollId: d100.config.rollId,
-					value : d100.value
+					value : d100.value,
+					pos: d100.mesh.position,
+					quat: d100.mesh.rotationQuaternion,
+					childPos: d10.mesh.position,
+					childQuat: d10.mesh.rotationQuaternion,
 				})
 			}
 		} else {
@@ -413,7 +434,9 @@ class WorldOnscreen {
 			}
 			this.onRollResult({
 				rollId: die.config.rollId,
-				value: die.value
+				value: die.value,
+				pos: die.mesh.position,
+				quat: die.mesh.rotationQuaternion,
 			})
 		}
 		// add to the sleeper count
