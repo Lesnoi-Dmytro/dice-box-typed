@@ -1,15 +1,15 @@
 export default class DiceBox {
   constructor(options?: DiceBoxOptions);
   init(): Promise<DiceBox>;
-  roll(dice: string | DiceRoll | (string | DiceRoll)[], options?: RollOptions): Promise<DiceRollResult[]>;
-  add(dice: string | DiceRoll | (string | DiceRoll)[], options?: RollOptions): Promise<DiceRollResult[]>;
-  reroll(notation: DiceRollResult | DiceRollResult[], options?: RerollOptions): Promise<DiceRollResult[]>;
-  remove(notation: DiceRollResult | DiceRollResult[], options?: RemoveOptions): Promise<DiceRollResult[]>;
+  showResults(dice: (DiceRoll & {value: number})[], options?: RollOptions): void;
+  roll(dice: (string | DiceRoll)[], options?: RollOptions): Promise<DiceRollResult[]>;
+  add(dice: (string | DiceRoll)[], options?: RollOptions): Promise<DiceRollResult[]>;
+  reroll(notation: DiceRollResult[], options?: RerollOptions): Promise<DiceRollResult[]>;
+  remove(notation: DiceRollResult[], options?: RemoveOptions): Promise<DiceRollResult[]>;
   updateConfig(options: Partial<DiceBoxOptions>): Promise<DiceBox>;
   clear(): DiceBox;
   hide(className?: string): DiceBox;
   show(): DiceBox;
-  showResults(dice:{id: number, value: number, sides: number | string, theme?: string, themeColor?: string}[]): void;
   getRollResults(): DiceRollResults[];
   config: DiceBoxOptions;
   isVisible: boolean;
@@ -52,6 +52,10 @@ export interface DiceRollResult {
   dieType: string; // the die type string (e.g., "d20")
   data?: any; // additional data for the die
   modifier?: number; // modifier applied to this die
+  pos?: { x: number, y: number, z: number };
+  quat?: { x: number, y: number, z: number, w: number };
+  childPos?: { x: number, y: number, z: number };
+  childQuat?: { x: number, y: number, z: number, w: number };
 }
 
 export interface DiceRollResults {

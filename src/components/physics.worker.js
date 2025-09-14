@@ -1,5 +1,5 @@
-import { lerp } from '../helpers'
 import AmmoJS from "../ammo/ammo.wasm.es.js"
+import { lerp } from '../helpers'
 
 // Firefox limitation: https://github.com/vitejs/vite/issues/4586
 
@@ -77,13 +77,13 @@ self.onmessage = (e) => {
 						loadModels(e.data.options)
 						break;
           case "addDie":
-						// toss from all edges
-						// setStartPosition()
 						if(e.data.options.newStartPoint){
 							setStartPosition()
 						}
             const newDie = addDie(e.data.options)
-						rollDie(newDie)
+						if (newDie.value === undefined) {
+							rollDie(newDie)
+						}
             break;
           case "rollDie":
 						// TODO: this won't work, need a die object
@@ -94,7 +94,6 @@ self.onmessage = (e) => {
 						break;
           case "stopSimulation":
             stopLoop = true
-						
             break;
           case "resumeSimulation":
 						if(e.data.newStartPoint){
@@ -434,7 +433,7 @@ const removeBoxFromWorld = () => {
 }
 
 const addDie = (options) => {
-	const { sides, id, meshName, scale} = options
+	const { sides, id, meshName, scale, pos, quat, value } = options
 	const dieType = Number.isInteger(sides) ? `d${sides}` : sides
 	let cType = `${dieType}_collider`
 	const comboKey = `${meshName}_${cType}`
@@ -442,25 +441,28 @@ const addDie = (options) => {
 	const mass = colliderMass * config.mass * config.scale // feature? mass should go up with scale, but it throws off the throwForce and spinForce scaling
 	// TODO: incorporate colliders physicsFriction and physicsRestitution settings
 	// clone the collider
+
 	const newDie = createRigidBody(colliders[comboKey].convexHull, {
 		mass,
 		scaling: colliders[comboKey].scaling,
-		pos: config.startPosition,
-		// quat: colliders[cType].rotationQuaternion,
+		pos: !pos ? config.startPosition : [pos.x, pos.y, pos.z],
+		quat: !quat ? undefined : [quat.x, quat.y, quat.z, quat.w],
 	})
 	newDie.id = id
-	newDie.timeout = config.settleTimeout
+	newDie.timeout = pos && quat ? 50 : config.settleTimeout
 	newDie.mass = mass
+
+	if (value !== undefined) {
+		newDie.value = value
+	}
+
 	physicsWorld.addRigidBody(newDie)
 	bodies.push(newDie)
 
 	return newDie
-	// console.log(`added collider for `, type)
-	// rollDie(newDie)
 }
 
 const rollDie = (die) => {
-
 	// lerp picks a random number between two values
 	die.setLinearVelocity(setVector3(
 		lerp(-config.startPosition[0] * .5, -config.startPosition[0] * config.throwForce, Math.random()),
@@ -640,9 +642,9 @@ const loop = () => {
 		// console.time("physics")
 		update(delta)
 		// console.timeEnd("physics")
-			worldWorkerPort.postMessage({
-				action: 'updates',
-				diceBuffer: diceBufferView.buffer
-			}, [diceBufferView.buffer])
+		worldWorkerPort.postMessage({
+			action: 'updates',
+			diceBuffer: diceBufferView.buffer
+		}, [diceBufferView.buffer])
 	}
 }

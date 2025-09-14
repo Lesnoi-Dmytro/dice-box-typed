@@ -39,11 +39,8 @@ self.onmessage = async (e) => {
 				onThemeLoaded: ({id}) => {
 					self.postMessage({action:"theme-loaded",id})
 				},
-				onRollResult: ({rollId, value}) => {
-					self.postMessage({action:"roll-result", die: {
-						rollId,
-						value
-					}})
+				onRollResult: (die) => {
+					self.postMessage({action:"roll-result", die})
 				},
 				onRollComplete: () => {
 					self.postMessage({action: "roll-complete"})
